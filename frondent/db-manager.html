@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Database Manager — Emotion Aware Chatbot</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: "Poppins", sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        h1 {
+            font-size: 28px;
+            color: #333;
+            margin: 0;
+        }
+
+        .back-btn {
+            background: #667eea;
+            color: #fff;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #5568d3;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+            text-transform: uppercase;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        input[type="text"], select {
+            padding: 10px 14px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: #fff;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+        }
+
+        .btn-export {
+            background: #51cf66;
+            color: #fff;
+        }
+
+        .btn-export:hover {
+            background: #40c057;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+        }
+
+        thead {
+            background: #f5f5f5;
+            border-bottom: 2px solid #ddd;
+        }
+
+        th {
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: #333;
+            font-size: 13px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 14px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        tr:hover {
+            background: #f9f9f9;
+        }
+
+        .email {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .message {
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .time-small {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .status-active {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #e7f5ff;
+            color: #0066cc;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-archived {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #999;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-btn {
+            background: none;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            color: #666;
+        }
+
+        .action-btn:hover {
+            background: #f5f5f5;
+            border-color: #999;
+        }
+
+        .action-btn.delete {
+            color: #ff6b6b;
+            border-color: #ff6b6b;
+        }
+
+        .action-btn.delete:hover {
+            background: #fff5f5;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 20px;
+            align-items: center;
+        }
+
+        .pagination button {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: #fff;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: #f5f5f5;
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination .info {
+            font-size: 13px;
+            color: #666;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.success {
+            background: #e7f5ff;
+            color: #0066cc;
+            border: 1px solid #74c0fc;
+            display: block;
+        }
+
+        .alert.danger {
+            background: #fff5f5;
+            color: #cc0000;
+            border: 1px solid #ffc9c9;
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            .header {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .controls {
+                flex-direction: column;
+            }
+            input[type="text"], select {
+                min-width: 100%;
+            }
+            .message {
+                max-width: 150px;
+            }
+            table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="login-container" style="display: flex;">
+        <div class="login-box">
+            <h2>🔐 Admin Access Required</h2>
+            <p style="color: #666; margin-bottom: 20px;">Enter admin password to access database</p>
+            <input type="password" id="adminPassword" placeholder="Admin Password" onkeypress="if(event.key==='Enter') adminLogin()">
+            <button class="btn btn-primary" style="width:100%; margin-top:10px;" onclick="adminLogin()">Login</button>
+            <button class="btn" style="width:100%; margin-top:8px; background:#999; color:#fff;" onclick="goBack()">Back</button>
+            <p style="color: #999; font-size:12px; margin-top:16px; text-align:center;">Only admins can view database records</p>
+        </div>
+    </div>
+
+    <div id="managerContainer" class="container" style="display: none;">
+        <div class="header">
+            <h1>📊 Database Manager</h1>
+            <div>
+                <button class="btn" style="background:#999; color:#fff; margin-right:8px;" onclick="adminLogout()">Logout</button>
+                <button class="back-btn" onclick="goBack()">← Back to Chat</button>
+            </div>
+        </div>
+
+        <div id="alert" class="alert"></div>
+
+        <div class="stats">
+            <div class="stat-card" onclick="showAllChats()">
+                <div class="stat-value" id="totalChats">0</div>
+                <div class="stat-label">Total Chats</div>
+            </div>
+            <div class="stat-card" onclick="showUsersList()">
+                <div class="stat-value" id="totalUsers">0</div>
+                <div class="stat-label">Total Users</div>
+            </div>
+            <div class="stat-card" onclick="showSessionsList()">
+                <div class="stat-value" id="totalSessions">0</div>
+                <div class="stat-label">Total Sessions</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input type="text" id="searchQuery" placeholder="Search messages..." onkeyup="debounceSearch()">
+            <input type="email" id="filterEmail" placeholder="Filter by email..." onkeyup="debounceSearch()">
+            <button class="btn btn-primary" onclick="search()">🔍 Search</button>
+            <button class="btn btn-export" onclick="exportData()">📥 Export CSV</button>
+            <button class="btn btn-danger" onclick="confirmClearAll()">🗑️ Clear All</button>
+        </div>
+
+        <div id="tableContainer" class="table-container">
+            <div class="empty">Loading data...</div>
+        </div>
+
+        <div class="pagination">
+            <button onclick="previousPage()" id="prevBtn">← Previous</button>
+            <span class="info" id="pageInfo">Page 1</span>
+            <button onclick="nextPage()" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <style>
+        .login-container {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: rgba(255,255,255,0.95);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-box h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+
+        .login-box input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .login-box input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let currentPage = 0;
+        const pageSize = 20;
+        let allData = [];
+        let searchTimeout;
+        let adminToken = sessionStorage.getItem("adminToken");
+        let currentView = "chats"; // Track current view type
+
+        // Check admin authentication on page load
+        window.addEventListener("DOMContentLoaded", () => {
+            if (!adminToken) {
+                document.getElementById("loginScreen").style.display = "flex";
+                document.getElementById("managerContainer").style.display = "none";
+            } else {
+                document.getElementById("loginScreen").style.display = "none";
+                document.getElementById("managerContainer").style.display = "block";
+                loadStats();
+                loadAllChats();
+                setInterval(loadStats, 30000);
+            }
+        });
+
+        async function adminLogin() {
+            const password = document.getElementById("adminPassword").value;
+            if (!password) {
+                alert("Please enter admin password");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/admin/login`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: password })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    adminToken = data.token;
+                    sessionStorage.setItem("adminToken", adminToken);
+                    
+                    document.getElementById("loginScreen").style.display = "none";
+                    document.getElementById("managerContainer").style.display = "block";
+                    document.getElementById("adminPassword").value = "";
+                    
+                    loadStats();
+                    loadAllChats();
+                    setInterval(loadStats, 30000);
+                } else {
+                    alert("❌ Incorrect password");
+                    document.getElementById("adminPassword").value = "";
+                }
+            } catch (err) {
+                console.error("Login error:", err);
+                alert("Login failed. Backend may not be running.");
+            }
+        }
+
+        function adminLogout() {
+            sessionStorage.removeItem("adminToken");
+            adminToken = null;
+            document.getElementById("loginScreen").style.display = "flex";
+            document.getElementById("managerContainer").style.display = "none";
+            document.getElementById("adminPassword").value = "";
+        }
+
+        async function loadStats() {
+            try {
+                const res = await fetch(`${API_URL}/admin/database/stats`, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                document.getElementById("totalChats").textContent = data.total_chats;
+                document.getElementById("totalUsers").textContent = data.total_users;
+                document.getElementById("totalSessions").textContent = data.total_sessions;
+            } catch (err) {
+                console.error("Error loading stats:", err);
+                showAlert("Failed to load statistics", "danger");
+            }
+        }
+
+        async function loadChats() {
+            try {
+                const offset = currentPage * pageSize;
+                const res = await fetch(`${API_URL}/admin/database/all-chats?limit=${pageSize}&offset=${offset}`, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                const data = await res.json();
+                renderTable(data);
+                updatePagination(data.length);
+            } catch (err) {
+                console.error("Error loading chats:", err);
+                showAlert("Failed to load chats", "danger");
+            }
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentPage = 0;
+                search();
+            }, 500);
+        }
+
+        async function search() {
+            try {
+                const query = document.getElementById("searchQuery").value;
+                const email = document.getElementById("filterEmail").value;
+                
+                currentView = "chats"; // Switch to chats view when searching
+                let url = `${API_URL}/admin/database/search?`;
+                if (email) url += `email=${encodeURIComponent(email)}`;
+                else if (query) url += `query=${encodeURIComponent(query)}`;
+
+                const res = await fetch(url, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                allData = await res.json();
+                currentPage = 0;
+                renderTable(allData.slice(0, pageSize));
+                updatePagination(allData.length);
+            } catch (err) {
+                console.error("Error searching:", err);
+                showAlert("Search failed", "danger");
+            }
+        }
+
+        function renderTable(rows) {
+            const container = document.getElementById("tableContainer");
+            
+            if (rows.length === 0) {
+                container.innerHTML = '<div class="empty">No data found</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Session ID</th>
+                            <th>User Message</th>
+                            <th>Bot Response</th>
+                            <th>Time</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            rows.forEach(row => {
+                const sessionIdDisplay = row.session_id ? row.session_id.substring(0, 8) + '...' : 'N/A';
+                html += `
+                    <tr>
+                        <td><span class="email">${escapeHtml(row.email)}</span></td>
+                        <td style="font-size:12px; color:#666;">${sessionIdDisplay}</td>
+                        <td><span class="message" title="${escapeHtml(row.user_msg)}">${escapeHtml(row.user_msg)}</span></td>
+                        <td><span class="message" title="${escapeHtml(row.bot_response)}">${escapeHtml(row.bot_response)}</span></td>
+                        <td><span class="time-small">${row.time}</span></td>
+                        <td><button class="action-btn delete" onclick="deleteChat(${row.id})">Delete</button></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function updatePagination(totalRows) {
+            const totalPages = Math.ceil(totalRows / pageSize);
+            document.getElementById("pageInfo").textContent = `Page ${currentPage + 1} of ${totalPages}`;
+            document.getElementById("prevBtn").disabled = currentPage === 0;
+            document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
+        }
+
+        function nextPage() {
+            currentPage++;
+            if (currentView === "users") {
+                renderUsersList(allData);
+            } else if (currentView === "sessions") {
+                renderSessionsList(allData);
+            } else {
+                renderTable(allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize));
+            }
+            updatePagination(allData.length);
+            window.scrollTo(0, 0);
+        }
+
+        function previousPage() {
+            currentPage--;
+            if (currentView === "users") {
+                renderUsersList(allData);
+            } else if (currentView === "sessions") {
+                renderSessionsList(allData);
+            } else {
+                renderTable(allData.slice(currentPage * pageSize, (currentPage + 1) * pageSize));
+            }
+            updatePagination(allData.length);
+            window.scrollTo(0, 0);
+        }
+
+        async function deleteChat(chatId) {
+            if (!confirm("Delete this chat record?")) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/database/chat/${chatId}`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (res.ok) {
+                    showAlert("Chat deleted successfully", "success");
+                    loadStats();
+                    loadChats();
+                }
+            } catch (err) {
+                console.error("Error deleting:", err);
+                showAlert("Failed to delete chat", "danger");
+            }
+        }
+
+        async function confirmClearAll() {
+            if (!confirm("⚠️ Delete ALL chat records? This cannot be undone!")) return;
+            
+            try {
+                const res = await fetch(`${API_URL}/admin/database/clear-all`, {
+                    method: "DELETE",
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (res.ok) {
+                    showAlert("All chats cleared", "success");
+                    loadStats();
+                    currentPage = 0;
+                    loadChats();
+                }
+            } catch (err) {
+                console.error("Error clearing:", err);
+                showAlert("Failed to clear data", "danger");
+            }
+        }
+
+        function exportData() {
+            if (allData.length === 0) {
+                alert("No data to export");
+                return;
+            }
+
+            let csv = "Email,Session ID,User Message,Bot Response,Time\n";
+            allData.forEach(row => {
+                csv += `"${row.email}","${row.session_id}","${escapeCSV(row.user_msg)}","${escapeCSV(row.bot_response)}","${row.time}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `chatbot_data_${Date.now()}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showAlert("Data exported successfully", "success");
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById("alert");
+            alert.textContent = message;
+            alert.className = `alert ${type}`;
+            setTimeout(() => {
+                alert.style.display = "none";
+            }, 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement("div");
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function escapeCSV(text) {
+            return text.replace(/"/g, '""');
+        }
+
+        function goBack() {
+            window.location.href = "chat.html";
+        }
+
+        // View functions for stat cards
+        function showAllChats() {
+            console.log("showAllChats() called");
+            currentView = "chats";
+            currentPage = 0;
+            document.getElementById("searchQuery").value = "";
+            document.getElementById("filterEmail").value = "";
+            console.log("Calling loadAllChats()");
+            loadAllChats();
+        }
+
+        function showUsersList() {
+            currentView = "users";
+            currentPage = 0;
+            loadUsersList();
+        }
+
+        function showSessionsList() {
+            currentView = "sessions";
+            currentPage = 0;
+            loadSessionsList();
+        }
+
+        async function loadAllChats() {
+            try {
+                console.log("loadAllChats() starting, adminToken:", adminToken ? "present" : "missing");
+                // Show loading message
+                document.getElementById("tableContainer").innerHTML = '<div class="loading">Loading chats...</div>';
+                
+                const res = await fetch(`${API_URL}/admin/database/all-chats?limit=10000`, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                console.log("loadAllChats() response status:", res.status);
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                console.log("loadAllChats() data received:", data.length, "records");
+                allData = data;
+                currentPage = 0;
+                if (allData.length > 0) {
+                    renderTable(allData.slice(0, pageSize));
+                    updatePagination(allData.length);
+                } else {
+                    document.getElementById("tableContainer").innerHTML = '<div class="empty">No chat records found</div>';
+                }
+                showAlert(`Loaded ${allData.length} chat records`, "success");
+            } catch (err) {
+                console.error("Error loading all chats:", err);
+                document.getElementById("tableContainer").innerHTML = `<div class="empty">Error loading chats: ${err.message}</div>`;
+                showAlert(`Failed to load chats: ${err.message}`, "danger");
+            }
+        }
+
+        async function loadUsersList() {
+            try {
+                document.getElementById("tableContainer").innerHTML = '<div class="loading">Loading users...</div>';
+                const res = await fetch(`${API_URL}/admin/database/all-chats?limit=10000`, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                
+                // Group by email and get unique users with chat count
+                const users = {};
+                data.forEach(chat => {
+                    if (!users[chat.email]) {
+                        users[chat.email] = { email: chat.email, count: 0, lastChat: chat.time };
+                    }
+                    users[chat.email].count++;
+                });
+                
+                const usersList = Object.values(users);
+                allData = usersList;
+                currentPage = 0;
+                renderUsersList(usersList);
+                updatePagination(usersList.length);
+                showAlert(`Loaded ${usersList.length} unique users`, "success");
+            } catch (err) {
+                console.error("Error loading users:", err);
+                document.getElementById("tableContainer").innerHTML = `<div class="empty">Error loading users: ${err.message}</div>`;
+                showAlert("Failed to load users", "danger");
+            }
+        }
+
+        async function loadSessionsList() {
+            try {
+                document.getElementById("tableContainer").innerHTML = '<div class="loading">Loading sessions...</div>';
+                const res = await fetch(`${API_URL}/admin/database/all-chats?limit=10000`, {
+                    headers: { "Authorization": `Bearer ${adminToken}` }
+                });
+                if (res.status === 401) {
+                    adminLogout();
+                    return;
+                }
+                if (!res.ok) {
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+                const data = await res.json();
+                
+                // Group by session_id and get unique sessions with chat count
+                const sessions = {};
+                data.forEach(chat => {
+                    // Skip records with null or empty session_id
+                    if (!chat.session_id) return;
+                    if (!sessions[chat.session_id]) {
+                        sessions[chat.session_id] = { session_id: chat.session_id, email: chat.email, count: 0, firstChat: chat.time };
+                    }
+                    sessions[chat.session_id].count++;
+                });
+                
+                const sessionsList = Object.values(sessions);
+                allData = sessionsList;
+                currentPage = 0;
+                renderSessionsList(sessionsList);
+                updatePagination(sessionsList.length);
+                showAlert(`Loaded ${sessionsList.length} sessions`, "success");
+            } catch (err) {
+                console.error("Error loading sessions:", err);
+                document.getElementById("tableContainer").innerHTML = `<div class="empty">Error loading sessions: ${err.message}</div>`;
+                showAlert("Failed to load sessions", "danger");
+            }
+        }
+
+        function renderUsersList(users) {
+            const container = document.getElementById("tableContainer");
+            
+            if (users.length === 0) {
+                container.innerHTML = '<div class="empty">No users found</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Total Chats</th>
+                            <th>Last Chat</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            users.slice(currentPage * pageSize, (currentPage + 1) * pageSize).forEach(user => {
+                html += `
+                    <tr>
+                        <td><span class="email">${escapeHtml(user.email)}</span></td>
+                        <td>${user.count}</td>
+                        <td><span class="time-small">${user.lastChat}</span></td>
+                        <td><button class="action-btn" onclick="filterByEmail('${escapeHtml(user.email)}')">View Chats</button></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function renderSessionsList(sessions) {
+            const container = document.getElementById("tableContainer");
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="empty">No sessions found</div>';
+                return;
+            }
+
+            let html = `
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Session ID</th>
+                            <th>Email</th>
+                            <th>Total Messages</th>
+                            <th>First Chat</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            sessions.slice(currentPage * pageSize, (currentPage + 1) * pageSize).forEach(session => {
+                const sessionIdDisplay = session.session_id ? session.session_id.substring(0, 12) + '...' : 'N/A';
+                html += `
+                    <tr>
+                        <td style="font-size:12px; color:#666;">${sessionIdDisplay}</td>
+                        <td><span class="email">${escapeHtml(session.email)}</span></td>
+                        <td>${session.count}</td>
+                        <td><span class="time-small">${session.firstChat}</span></td>
+                        <td><button class="action-btn" onclick="filterBySession('${session.session_id || ''}')">View Chats</button></td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        function filterByEmail(email) {
+            currentView = "chats";
+            document.getElementById("filterEmail").value = email;
+            document.getElementById("searchQuery").value = "";
+            currentPage = 0;
+            search();
+        }
+
+        function filterBySession(sessionId) {
+            currentView = "chats";
+            document.getElementById("filterEmail").value = "";
+            document.getElementById("searchQuery").value = sessionId;
+            currentPage = 0;
+            search();
+        }
+    </script>
+
+</body>
+</html>

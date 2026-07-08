@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — Emotion Aware Chatbot</title>
+  <style>
+    *{box-sizing:border-box;font-family:"Poppins",sans-serif;margin:0;padding:0}
+    body{
+      min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      background: url("c1.jpg") center/cover no-repeat fixed;
+    }
+    .container{
+      width:400px;max-width:92%;
+      background:rgba(255,255,255,0.12);backdrop-filter:blur(14px);
+      border-radius:18px;padding:36px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,0.25);
+      text-align:center;position:relative;
+    }
+    h2{font-size:22px;margin-bottom:18px;letter-spacing:0.6px}
+    .form-group{margin-bottom:14px;position:relative}
+    input[type="email"],input[type="password"]{
+      width:100%;padding:12px 14px;border-radius:10px;border:none;background:rgba(255,255,255,0.2);color:#fff;font-size:15px;
+    }
+    input:focus{outline:none;box-shadow:0 0 10px rgba(0,195,255,0.18)}
+    .forgot{display:block;text-align:right;color:#ffea00;text-decoration:none;margin-bottom:12px;font-size:13px}
+    .btn{width:100%;padding:12px;border-radius:8px;border:none;background:linear-gradient(90deg,#00c3ff,#0072ff);color:#fff;font-weight:600;cursor:pointer}
+    .btn:active{transform:translateY(1px)}
+    .link{margin-top:12px;font-size:14px}
+    .link a{color:#ffea00;text-decoration:none;font-weight:600}
+    .popup{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:40}
+    .popup-content{background:#fff;color:#222;border-radius:12px;padding:26px 28px;text-align:center;min-width:260px}
+    .popup-content button{margin-top:12px;padding:10px 18px;border-radius:8px;border:none;background:#0072ff;color:#fff;cursor:pointer}
+    .icon-eye{position:absolute;right:12px;top:10px;color:#fff;cursor:pointer}
+    /* small */
+    @media(max-width:460px){ .container{padding:22px} h2{font-size:20px} }
+  </style>
+</head>
+<body>
+
+  <div class="container" role="main" aria-labelledby="loginTitle">
+    <h2 id="loginTitle">Welcome to Emotion Aware Chatbot</h2>
+
+    <div class="form-group">
+      <input id="email" type="email" placeholder="Email" autocomplete="username" />
+    </div>
+
+    <div class="form-group" style="margin-bottom:6px;">
+      <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+      <span id="togglePassword" class="icon-eye" aria-hidden="true">👁️</span>
+    </div>
+
+    <a class="forgot" href="forgotpassword.html">Forgot Password?</a>
+
+    <button id="loginBtn" class="btn" type="button">Login</button>
+
+    <div class="link">Don’t have an account? <a href="signup.html">Sign Up</a></div>
+  </div>
+
+  <!-- popup -->
+  <div id="popup" class="popup" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="popup-content">
+      <h3>🎉 Login Successful</h3>
+      <p>We are redirecting you to the chatbot...</p>
+      <button id="closePopup">OK</button>
+    </div>
+  </div>
+
+  <script>
+    (function(){
+      // Elements (may be null if file changed)
+      const emailEl = document.getElementById('email');
+      const passwordEl = document.getElementById('password');
+      const loginBtn = document.getElementById('loginBtn');
+      const popup = document.getElementById('popup');
+      const closePopup = document.getElementById('closePopup');
+      const toggle = document.getElementById('togglePassword');
+
+      // Safe helper to add listeners if element exists
+      const safeOn = (el, ev, fn) => { if(el) el.addEventListener(ev, fn); };
+
+      // Toggle password visibility
+      safeOn(toggle, 'click', () => {
+        if(!passwordEl) return;
+        passwordEl.type = passwordEl.type === 'password' ? 'text' : 'password';
+        // small visual toggling
+        toggle.textContent = passwordEl.type === 'password' ? '👁️' : '🙈';
+      });
+
+      // Submit handler - no form submit (we use JS)
+      safeOn(loginBtn, 'click', () => {
+        try{
+          const email = emailEl?.value?.trim() || '';
+          const pass = passwordEl?.value || '';
+
+          if(!email || !pass){
+            alert('Please enter both email and password.');
+            return;
+          }
+
+          // (Optional) you can call backend login endpoint here using fetch()
+          // For demo we treat as successful login.
+          localStorage.setItem('ec_email', email);
+          localStorage.setItem('ec_name', email.split('@')[0] || 'User');
+
+          // show popup
+          if(popup){
+            popup.style.display = 'flex';
+            popup.setAttribute('aria-hidden','false');
+          } else {
+            // fallback redirect if popup not present
+            window.location.href = 'chat.html';
+          }
+        }catch(err){
+          console.error('Login error:', err);
+          alert('An error occurred. Check console for details.');
+        }
+      });
+
+      // Enter key handling on inputs
+      safeOn(emailEl, 'keydown', (e)=> { if(e.key === 'Enter') loginBtn?.click(); });
+      safeOn(passwordEl, 'keydown', (e)=> { if(e.key === 'Enter') loginBtn?.click(); });
+
+      // Close popup -> redirect
+      safeOn(closePopup, 'click', () => {
+        try{
+          if(popup){ popup.style.display = 'none'; popup.setAttribute('aria-hidden','true'); }
+          // Redirect to chat page (must exist)
+          window.location.href = 'chat.html';
+        }catch(err){ console.error(err); window.location.href = 'chat.html'; }
+      });
+
+      // Accessibility: close popup on Escape
+      safeOn(document, 'keydown', (e)=>{
+        if(e.key === 'Escape' && popup && popup.style.display === 'flex'){
+          closePopup?.click();
+        }
+      });
+
+    })();
+  </script>
+</body>
+</html>

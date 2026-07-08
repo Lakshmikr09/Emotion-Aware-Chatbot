@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Emotion Aware Chatbot</title>
+<style>
+    body {
+        margin: 0; padding: 0;
+        background: url("c2.jpg") center/cover no-repeat fixed;
+        background-size: cover;
+        animation: backgroundPulse 20s ease-in-out infinite;
+        font-family: Poppins, sans-serif;
+        display: flex; justify-content: center; align-items: center;
+        height: 100vh; color: #fff;
+        overflow: hidden;
+        position: relative;
+    }
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.3);
+        z-index: -1;
+    }
+    @keyframes backgroundPulse {
+        0%, 100% { filter: brightness(1) saturate(1); }
+        50% { filter: brightness(1.1) saturate(1.2); }
+    }
+
+    /* Light mode styles */
+    body.light-mode {
+        background: linear-gradient(135deg, #ffffff, #f5f5f5);
+    }
+    body.light-mode .sidebar {
+        background: rgba(255,255,255,0.95);
+        border-right: 1px solid rgba(0,0,0,0.1);
+    }
+    body.light-mode .settings-icon { color: #333; }
+    body.light-mode .settings-icon:hover { color: #0072ff; }
+    body.light-mode .settings-menu {
+        background: rgba(255,255,255,0.95);
+        border-right: 1px solid rgba(0,0,0,0.1);
+    }
+    body.light-mode .settings-menu .menu-item-btn,
+    body.light-mode .settings-menu .new-chat-btn {
+        background: rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.1);
+        color: #333;
+    }
+    body.light-mode .settings-menu .menu-item-btn:hover,
+    body.light-mode .settings-menu .new-chat-btn:hover {
+        background: rgba(0,0,0,0.1);
+    }
+    body.light-mode .profile-item { color: #333; }
+    body.light-mode .chat-container {
+        background: rgba(255,255,255,0.98);
+        border: 1px solid rgba(0,0,0,0.1);
+    }
+    body.light-mode .header { color: #333; }
+    body.light-mode #chatBox { color: #333; }
+    body.light-mode .msg.user {
+        background: #0072ff;
+        color: #fff;
+    }
+    body.light-mode .msg.bot {
+        background: #e8e8e8;
+        color: #333;
+    }
+    .app-container {
+        display: flex; width: 100%; height: 100vh;
+        max-width: 1200px; margin: 0 auto;
+    }
+    .sidebar {
+        width: 60px; background: rgba(255,255,255,0.1);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255,255,255,0.2);
+        padding: 20px 10px; overflow-y: auto;
+        display: flex; flex-direction: column;
+        height: 100vh; align-items: center;
+    }
+    .settings-icon {
+        font-size: 24px; cursor: pointer; color: #fff;
+        transition: .2s;
+    }
+    .settings-icon:hover { color: #00c3ff; }
+
+    .settings-menu {
+        display: none;
+        position: fixed;
+        top: 0; left: 60px; width: 320px; height: 100vh;
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-right: 1px solid rgba(255,255,255,0.12);
+        padding: 20px; overflow-y: auto;
+        z-index: 1000;
+    }
+    .settings-menu.show { display: block; }
+
+    .menu-header { margin-bottom: 20px; }
+    .new-chat-btn {
+        width: 100%; background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #fff; padding: 10px;
+        border-radius: 10px; cursor: pointer;
+        font-weight: 600; margin-bottom: 20px;
+        transition: .2s; display: flex; align-items: center; gap: 10px;
+    }
+    .new-chat-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .session-item {
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(0, 123, 255, 0.3);
+        color: #fff; padding: 10px;
+        border-radius: 10px; margin-bottom: 10px;
+        display: flex; justify-content: space-between; align-items: center;
+        cursor: pointer; transition: .3s;
+    }
+    .session-item:hover, .session-item.active {
+        background: #00c3ff;
+        border-color: #00c3ff;
+    }
+    .session-item.deleting {
+        background: rgba(0, 123, 255, 0.3);
+        border-color: rgba(0, 123, 255, 0.5);
+    }
+    .session-text { flex: 1; }
+    .session-actions { display:flex; gap:6px; }
+
+    .action-btn {
+        background: none; border: none; color: #fff; cursor: pointer;
+        font-size: 14px; padding: 4px 6px; border-radius: 4px;
+    }
+    .action-btn:hover { background: rgba(255,255,255,0.08); }
+
+    .action-container { display: flex; gap: 4px; }
+    .delete-confirm-btn { background: #ff4444; color: #fff; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; }
+    .delete-confirm-btn:hover { background: #cc0000; }
+    .cancel-btn { background: #00c3ff; color: #fff; padding: 4px 8px; border-radius: 4px; border: none; cursor: pointer; font-size: 12px; }
+    .cancel-btn:hover { background: #0099cc; }
+
+    .search-history-modal .modal-content {
+        max-height: 70vh; overflow-y: auto;
+    }
+    .search-history-list {
+        max-height: 50vh; overflow-y: auto;
+    }
+
+    .profile-section {
+        margin-top: auto;
+        border-top: 1px solid rgba(255,255,255,0.12);
+        padding-top: 16px;
+    }
+
+    .menu-item-btn {
+        width: 100%; background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.14);
+        color: #fff; padding: 10px;
+        border-radius: 10px; cursor: pointer;
+        font-weight: 600; margin-bottom: 10px;
+        transition: .15s; text-align: left;
+    }
+    .menu-item-btn:hover { background: rgba(255,255,255,0.2); }
+
+    .profile-item {
+        display: flex; align-items: center; gap: 10px;
+        color: #fff; margin-bottom: 10px;
+        font-size: 14px; cursor: pointer;
+    }
+    .profile-details { display:none; margin-top:8px; }
+    .profile-details.show { display:block; }
+
+    .mode-toggle {
+        display:flex; justify-content:space-between; align-items:center;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #fff; padding: 8px; border-radius: 8px; margin-top:8px;
+    }
+    .toggle-switch {
+        position: relative; width: 40px; height: 20px;
+        background: #ccc; border-radius: 20px; cursor: pointer;
+    }
+    .toggle-switch.active { background: #00c3ff; }
+    .toggle-switch::after {
+        content:''; position:absolute; top:2px; left:2px; width:16px; height:16px;
+        background:#fff; border-radius:50%; transition:.25s;
+    }
+    .toggle-switch.active::after { transform: translateX(20px); }
+
+    .logout-btn {
+        width: 100%; background: #ff4444; border: none; padding: 10px;
+        border-radius: 10px; cursor: pointer; font-weight: 600; color:#fff;
+    }
+    .logout-btn:hover { background:#cc0000; }
+
+    /* Chat area */
+    .chat-container {
+        flex: 1; background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 18px; margin: 20px; padding: 22px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+        display: flex; flex-direction: column;
+    }
+    .header { text-align:center; padding-bottom:12px; font-size:20px; font-weight:600; display:flex; gap:10px; align-items:center; justify-content:center; }
+    #chatBox { height: 380px; overflow-y: auto; padding-right:6px; display: flex; flex-direction: column; }
+    .msg { margin:10px 0; padding:10px 14px; border-radius:14px; animation:fadeIn .35s ease-in-out; display: inline-block; width: fit-content; max-width: 85%; }
+    .user { background: #00c3ff; align-self: flex-start; border-bottom-right-radius:0; color:#000; }
+    .bot { background: #ffe066; align-self: flex-end; border-bottom-left-radius:0; color:#000; }
+    #typing { font-style:italic; font-size:13px; color:#eee; display:none; }
+    .input-area { display:flex; gap:8px; margin-top:12px; }
+    input[type="text"], .modal-content input { width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; box-sizing:border-box; }
+    button { background:#00ff88; border:none; padding:12px 16px; border-radius:10px; cursor:pointer; font-weight:600; }
+    button:hover { transform:scale(1.03); }
+
+    /* Voice button styles */
+    .voice-btn {
+        background: #ff6b6b !important;
+        padding: 12px 14px !important;
+        font-size: 18px !important;
+        flex-shrink: 0;
+    }
+    .voice-btn:hover { background: #ff5252 !important; }
+    .voice-btn.active {
+        background: #ff3333 !important;
+        animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.6; }
+    }
+
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+    /* Modal styles */
+    .modal {
+        display:none; position:fixed; z-index:1200; left:0; top:0; width:100%; height:100%;
+        background-color: rgba(0,0,0,0.5); justify-content:center; align-items:center;
+    }
+    .modal-content {
+        background: rgba(255,255,255,0.96); padding:18px; border-radius:10px; width:320px; max-width:92%;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    }
+    .modal-content h3 { margin:0 0 8px 0; color:#222; }
+    .modal-content input { margin:6px 0; }
+    .modal-content .save-btn { background:#00c853; color:#fff; }
+    .modal-content .cancel-btn { background:#ff4444; color:#fff; }
+    .modal-content .save-btn:hover { background:#00b14a; }
+    .modal-content .cancel-btn:hover { background:#cc0000; }
+
+    /* Profile modal with background image */
+    #profileModal .modal-content {
+        background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.4)), url('c3.jpg') center/cover no-repeat;
+        color: #fff;
+    }
+    #profileModal .modal-content h3 { color: #fff; }
+    #profileModal .modal-content input, #profileModal .modal-content select {
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+    #profileModal .modal-content input::placeholder {
+        color: rgba(255,255,255,0.6);
+    }
+    #profileModal .modal-content .save-btn { background: linear-gradient(90deg, #00c853, #00a846); }
+    #profileModal .modal-content .cancel-btn { background: rgba(255,255,255,0.2); color:#fff; border:1px solid rgba(255,255,255,0.3); }
+
+    /* Profile avatar styles */
+    .profile-avatar-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-bottom: 16px;
+        gap: 8px;
+    }
+    .profile-avatar {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid rgba(255,255,255,0.3);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        background: rgba(255,255,255,0.1);
+    }
+    .avatar-upload-btn {
+        background: rgba(255,255,255,0.2) !important;
+        color: #fff;
+        border: 1px solid rgba(255,255,255,0.3);
+        padding: 8px 12px;
+        font-size: 12px;
+        margin: 0 !important;
+    }
+    .avatar-upload-btn:hover {
+        background: rgba(255,255,255,0.3) !important;
+    }
+
+    /* Settings modal styles */
+    .settings-modal {
+        width: 380px;
+        max-height: 80vh;
+        overflow-y: auto;
+        background: linear-gradient(135deg, rgba(0,0,0,0.5), rgba(0,0,0,0.4)), url('c3.jpg') center/cover no-repeat !important;
+        color: #fff !important;
+    }
+    .settings-modal h3 {
+        color: #fff !important;
+    }
+    .settings-section {
+        margin-bottom: 18px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    .settings-section h4 {
+        color: #fff;
+        margin: 0 0 10px 0;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .settings-toggle {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #fff;
+        padding: 8px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+    }
+    .settings-modal select {
+        background: rgba(255,255,255,0.08) !important;
+        color: #fff !important;
+        border: 1px solid rgba(255,255,255,0.2) !important;
+    }
+    .settings-modal select option {
+        background: #1a1a2e;
+        color: #fff;
+    }
+    .size-btn {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .size-btn:hover {
+        background: rgba(255,255,255,0.15);
+    }
+    .action-btn-settings {
+        padding: 10px 14px;
+        border-radius: 8px;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(255,255,255,0.08);
+        color: #fff;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+    .action-btn-settings:hover {
+        background: rgba(255,255,255,0.15);
+    }
+    .action-btn-settings.danger {
+        background: rgba(255, 68, 68, 0.2);
+        border-color: rgba(255, 68, 68, 0.4);
+    }
+    .action-btn-settings.danger:hover {
+        background: rgba(255, 68, 68, 0.3);
+    }
+
+    /* small screens */
+    @media (max-width: 800px) {
+        .settings-menu { width: 260px; left: 50px; }
+        .chat-container { margin: 12px; padding: 16px; }
+    }
+</style>
+</head>
+<body>
+
+<div class="app-container">
+    <div class="sidebar">
+        <div class="settings-icon" onclick="toggleSettingsMenu()">⚙️</div>
+    </div>
+
+    <div class="settings-menu" id="settingsMenu" aria-hidden="true">
+        <div class="menu-header">
+            <button class="new-chat-btn" onclick="createNewSession()">
+                <span>➕</span> New Chat
+            </button>
+        </div>
+
+        <div class="profile-section">
+            <button class="menu-item-btn" onclick="openProfileModal()">👤 Profile</button>
+            <button class="menu-item-btn" onclick="openSearchHistory()">📜 Search History</button>
+            <!-- added explicit Settings and Logout buttons per request -->
+            <button class="menu-item-btn" onclick="openAppSettings()">⚙️ Settings</button>
+            <button class="menu-item-btn" onclick="logout()">🔓 Logout</button>
+
+            <hr style="border:none; border-top:1px solid rgba(255,255,255,0.08); margin:12px 0;">
+
+            <div class="profile-item" onclick="toggleProfileDetails()">
+                <strong id="profileName"></strong>
+            </div>
+
+            <div class="profile-details" id="profileDetails" role="region" aria-label="Profile details">
+                <div class="profile-item">name - <span id="profileNameDetail"></span></div>
+                <div class="profile-item">email - <span id="profileEmailDetail"></span></div>
+                <div class="profile-item">phone - <span id="profilePhoneDetail"></span></div>
+                <div class="profile-item">age - <span id="profileAgeDetail">-</span></div>
+                <div class="profile-item">gender - <span id="profileGenderDetail">-</span></div>
+                <div class="profile-item">address - <span id="profileAddressDetail">-</span></div>
+                <div class="profile-item">joined - <span id="profileJoinedDetail">-</span></div>
+
+                <div class="mode-toggle" style="margin-top:10px;">
+                    <span>Dark Mode</span>
+                    <div class="toggle-switch" id="modeToggle" onclick="toggleMode()"></div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:12px;">
+                    <button class="menu-item-btn" style="flex:1" onclick="openProfileModal()">Edit Profile</button>
+                    <button class="logout-btn" style="flex:1" onclick="logout()">Logout</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="header">
+            🤖 Emotion Aware Chatbot
+        </div>
+
+        <div id="chatBox"></div>
+        <div id="typing">Bot is typing...</div>
+
+        <div class="input-area">
+            <input id="messageInput" type="text" placeholder="Type message..." />
+            <button onclick="sendMessage()">Send</button>
+            <button class="voice-btn" id="voiceBtn" onclick="startVoiceInput()" title="Click to speak">🎤</button>
+        </div>
+    </div>
+</div>
+
+<!-- Profile Edit Modal -->
+<div id="profileModal" class="modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="profileModalTitle">
+        <div class="profile-avatar-container">
+            <img id="profileAvatarImg" src="" alt="User avatar" class="profile-avatar" />
+            <input type="file" id="avatarUpload" accept="image/*" style="display:none;" onchange="uploadAvatar(event)" />
+            <button type="button" class="avatar-upload-btn" onclick="document.getElementById('avatarUpload').click()">📷 Change Photo</button>
+        </div>
+        <h3 id="profileModalTitle">Edit Profile</h3>
+        <input id="editName" placeholder="Name" />
+        <input id="editEmail" placeholder="Email" />
+        <input id="editPhone" placeholder="Phone" />
+        <input id="editAge" placeholder="Age" />
+        <input id="editGender" placeholder="Gender" />
+        <input id="editAddress" placeholder="Address" />
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+            <button class="cancel-btn" onclick="closeProfileModal()">Cancel</button>
+            <button class="save-btn" onclick="saveProfileChanges()">Save</button>
+        </div>
+    </div>
+</div>
+
+<!-- Search History Modal -->
+<div id="searchHistoryModal" class="modal search-history-modal" aria-hidden="true">
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="searchHistoryModalTitle">
+        <h3 id="searchHistoryModalTitle">Search History</h3>
+        <div id="searchHistoryList" class="search-history-list"></div>
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:8px;">
+            <button class="cancel-btn" onclick="closeSearchHistoryModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- App Settings Modal -->
+<div id="appSettingsModal" class="modal" aria-hidden="true">
+    <div class="modal-content settings-modal" role="dialog" aria-modal="true" aria-labelledby="appSettingsModalTitle">
+        <h3 id="appSettingsModalTitle">⚙️ App Settings</h3>
+        
+        <!-- Theme Section -->
+        <div class="settings-section">
+            <h4>Theme</h4>
+            <div style="display: flex; gap: 10px;">
+                <button class="menu-item-btn" onclick="setDarkMode()">🌙 Dark Mode</button>
+                <button class="menu-item-btn" onclick="setLightMode()">☀️ Light Mode</button>
+            </div>
+        </div>
+
+        <!-- Notifications -->
+        <div class="settings-section">
+            <h4>Notifications</h4>
+            <div class="settings-toggle">
+                <span>Enable Notifications</span>
+                <div class="toggle-switch" id="notificationsToggle" onclick="toggleNotifications()"></div>
+            </div>
+        </div>
+
+        <!-- Sound Effects -->
+        <div class="settings-section">
+            <h4>Sound Effects</h4>
+            <div class="settings-toggle">
+                <span>Enable Sound</span>
+                <div class="toggle-switch" id="soundToggle" onclick="toggleSound()"></div>
+            </div>
+        </div>
+
+        <!-- Language -->
+        <div class="settings-section">
+            <h4>Language</h4>
+            <select id="languageSelect" onchange="changeLanguage(this.value)" style="width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#fff;">
+                <option value="en">English</option>
+                <option value="es">Español</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="hi">हिन्दी</option>
+            </select>
+        </div>
+
+        <!-- Font Size -->
+        <div class="settings-section">
+            <h4>Font Size</h4>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <button class="size-btn" onclick="setFontSize('small')">A</button>
+                <button class="size-btn" onclick="setFontSize('medium')" style="font-size:16px;">A</button>
+                <button class="size-btn" onclick="setFontSize('large')" style="font-size:20px;">A</button>
+            </div>
+        </div>
+
+        <!-- Auto-save Frequency -->
+        <div class="settings-section">
+            <h4>Auto-save Frequency</h4>
+            <select id="autoSaveSelect" onchange="setAutoSaveFrequency(this.value)" style="width:100%; padding:8px; border-radius:8px; border:1px solid rgba(255,255,255,0.3); background:rgba(255,255,255,0.1); color:#fff;">
+                <option value="instant">Instant</option>
+                <option value="5s">Every 5 seconds</option>
+                <option value="30s">Every 30 seconds</option>
+                <option value="1m">Every 1 minute</option>
+            </select>
+        </div>
+
+        <!-- Privacy Settings -->
+        <div class="settings-section">
+            <h4>Privacy</h4>
+            <div class="settings-toggle">
+                <span>Save Chat History</span>
+                <div class="toggle-switch" id="privacyToggle" onclick="togglePrivacy()"></div>
+            </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="settings-section">
+            <h4>Data Management</h4>
+            <button class="action-btn-settings" onclick="openDatabaseManager()" style="width:100%; margin-bottom:8px;">📊 Database Manager</button>
+            <button class="action-btn-settings" onclick="exportChatData()" style="width:100%; margin-bottom:8px;">📥 Export Chat Data</button>
+            <button class="action-btn-settings danger" onclick="clearChatHistory()" style="width:100%;">🗑️ Clear Chat History</button>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:16px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2);">
+            <button class="cancel-btn" onclick="closeAppSettingsModal()">Close</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // read user email for server requests
+    const userEmail = localStorage.getItem("ec_email") || "";
+    // Use network IP for mobile access
+    const API_BASE_URL = window.location.hostname === "127.0.0.1" ? "http://127.0.0.1:8000" : `http://${window.location.hostname}:8000`;
+
+    let currentSessionId = localStorage.getItem("currentSessionId") || null;
+    let sessions = [];
+    let deletingSessionId = null;
+
+    function displayMessage(sender, text, emoji="") {
+        const box = document.getElementById("chatBox");
+        const msg = document.createElement("div");
+        msg.classList.add("msg", sender === "user" ? "user" : "bot");
+        msg.innerHTML = `${emoji ? '<strong>'+emoji+'</strong> ' : ''}${text}`;
+        box.appendChild(msg);
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function clearChat() { document.getElementById("chatBox").innerHTML = ""; }
+
+    function createNewSession() {
+        currentSessionId = "session_" + Date.now();
+        localStorage.setItem("currentSessionId", currentSessionId);
+        const newSession = {
+            session_id: currentSessionId,
+            start_time: new Date().toISOString(),
+            messages: []
+        };
+        sessions.push(newSession);
+        localStorage.setItem("ec_sessions", JSON.stringify(sessions));
+        clearChat();
+        updateActiveSession();
+        toggleSettingsMenu();
+    }
+
+    function loadSessions() {
+        // Load sessions from localStorage for offline mode
+        sessions = JSON.parse(localStorage.getItem("ec_sessions") || "[]");
+    }
+
+    function renderSessions(onClickCallback = () => { loadSession(session.session_id); toggleSettingsMenu(); }, listId = "sessionsList") {
+        const list = document.getElementById(listId);
+        if (!list) return;
+        list.innerHTML = "";
+        sessions.forEach(session => {
+            const item = document.createElement("div");
+            item.className = "session-item";
+            item.setAttribute("data-session-id", session.session_id);
+
+            const textSpan = document.createElement("span");
+            textSpan.className = "session-text";
+            textSpan.innerText = `Session ${new Date(session.start_time).toLocaleString()}`;
+            textSpan.onclick = () => { onClickCallback(session.session_id); };
+
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "session-actions";
+
+            const shareBtn = document.createElement("button");
+            shareBtn.className = "action-btn share-btn";
+            shareBtn.innerText = "📤";
+            shareBtn.onclick = (e) => { e.stopPropagation(); shareSession(session.session_id); };
+
+            const archiveBtn = document.createElement("button");
+            archiveBtn.className = "action-btn archive-btn";
+            archiveBtn.innerText = "📁";
+            archiveBtn.onclick = (e) => { e.stopPropagation(); archiveSession(session.session_id); };
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "action-btn delete-btn";
+            deleteBtn.innerText = "🗑️";
+            deleteBtn.onclick = (e) => { e.stopPropagation(); deleteSession(session.session_id); closeSearchHistoryModal(); };
+
+            actionsDiv.appendChild(shareBtn);
+            actionsDiv.appendChild(archiveBtn);
+            actionsDiv.appendChild(deleteBtn);
+
+            item.appendChild(textSpan);
+            item.appendChild(actionsDiv);
+            list.appendChild(item);
+        });
+        if (listId === "sessionsList") updateActiveSession();
+    }
+
+    function updateActiveSession() {
+        document.querySelectorAll(".session-item").forEach((item, index) => {
+            item.classList.toggle("active", sessions[index] && sessions[index].session_id === currentSessionId);
+        });
+    }
+
+    function loadSession(sessionId) {
+        currentSessionId = sessionId;
+        clearChat();
+        const session = sessions.find(s => s.session_id === sessionId);
+        if (session && session.messages) {
+            session.messages.forEach(msg => {
+                displayMessage(msg.sender, msg.text, msg.emoji || "");
+            });
+        }
+        updateActiveSession();
+    }
+
+    function emotionEmoji(emotion) {
+        switch (emotion) {
+            case "happy": return "😊";
+            case "sad": return "😢";
+            case "angry": return "😡";
+            case "stressed": return "😣";
+            case "excited": return "🤩";
+            case "confused": return "😕";
+            case "bored": return "😴";
+            case "surprised": return "😲";
+            default: return "🤖";
+        }
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById("messageInput");
+        const text = input.value.trim();
+        if (!text) return;
+        displayMessage("user", text);
+        input.value = "";
+        document.getElementById("typing").style.display = "block";
+
+        try {
+            // Create new session if needed
+            if (!currentSessionId) {
+                currentSessionId = "session_" + Date.now();
+                localStorage.setItem("currentSessionId", currentSessionId);
+                const newSession = {
+                    session_id: currentSessionId,
+                    start_time: new Date().toISOString(),
+                    messages: []
+                };
+                sessions.push(newSession);
+                localStorage.setItem("ec_sessions", JSON.stringify(sessions));
+            }
+
+            // Call actual backend API
+            const response = await fetch(`${API_BASE_URL}/chat`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    text: text,
+                    email: userEmail,
+                    session_id: currentSessionId
+                })
+            });
+
+            document.getElementById("typing").style.display = "none";
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+            }
+
+            const data = await response.json();
+            
+            // Use backend response
+            const reply = data.reply || "Sorry, I couldn't generate a response.";
+            const emotion = data.detected_emotion || "neutral";
+            const emo = emotionEmoji(emotion);
+            
+            displayMessage("bot", reply, emo);
+
+            // Save messages to current session with backend response
+            const session = sessions.find(s => s.session_id === currentSessionId);
+            if (session) {
+                session.messages.push({ sender: "user", text: text, timestamp: new Date().toISOString() });
+                session.messages.push({ sender: "bot", text: reply, emoji: emo, timestamp: new Date().toISOString(), emotion: emotion });
+                localStorage.setItem("ec_sessions", JSON.stringify(sessions));
+            }
+            
+            // Store the session_id returned by backend for future reference
+            if (data.session_id) {
+                localStorage.setItem("currentSessionId", data.session_id);
+            }
+        } catch (error) {
+            document.getElementById("typing").style.display = "none";
+            console.error("Error sending message:", error);
+            
+            // Fallback to local emotion detection if backend fails
+            const emotion = detectEmotion(text);
+            const reply = getReply(emotion);
+            const emo = emotionEmoji(emotion);
+            displayMessage("bot", "⚠️ Backend connection issue - using offline mode: " + reply, emo);
+            
+            // Save to session anyway
+            const session = sessions.find(s => s.session_id === currentSessionId);
+            if (session) {
+                session.messages.push({ sender: "user", text: text, timestamp: new Date().toISOString() });
+                session.messages.push({ sender: "bot", text: reply, emoji: emo, timestamp: new Date().toISOString() });
+                localStorage.setItem("ec_sessions", JSON.stringify(sessions));
+            }
+        }
+    }
+
+    function detectEmotion(text) {
+        const lower = text.toLowerCase();
+        // Enhanced emotion detection with more keywords
+        if (lower.includes("happy") || lower.includes("great") || lower.includes("awesome") || lower.includes("excited") || lower.includes("amazing") || lower.includes("fantastic") || lower.includes("wonderful") || lower.includes("love") || lower.includes("joy") || lower.includes("celebrate") || lower.includes("yay") || lower.includes("woo")) return "happy";
+        if (lower.includes("sad") || lower.includes("unhappy") || lower.includes("depressed") || lower.includes("down") || lower.includes("blue") || lower.includes("heartbroken") || lower.includes("cry") || lower.includes("tears") || lower.includes("lonely") || lower.includes("miserable")) return "sad";
+        if (lower.includes("angry") || lower.includes("mad") || lower.includes("frustrated") || lower.includes("pissed") || lower.includes("furious") || lower.includes("rage") || lower.includes("hate") || lower.includes("annoyed") || lower.includes("irritated") || lower.includes("upset")) return "angry";
+        if (lower.includes("stressed") || lower.includes("overwhelmed") || lower.includes("anxious") || lower.includes("worried") || lower.includes("nervous") || lower.includes("panic") || lower.includes("pressure") || lower.includes("tension") || lower.includes("burnout")) return "stressed";
+        if (lower.includes("excited") || lower.includes("thrilled") || lower.includes("pumped") || lower.includes("hyped") || lower.includes("energetic") || lower.includes("motivated") || lower.includes("inspired")) return "excited";
+        if (lower.includes("confused") || lower.includes("lost") || lower.includes("puzzled") || lower.includes("bewildered") || lower.includes("uncertain")) return "confused";
+        if (lower.includes("bored") || lower.includes("tired") || lower.includes("sleepy") || lower.includes("lazy") || lower.includes("meh")) return "bored";
+        if (lower.includes("surprised") || lower.includes("shocked") || lower.includes("wow") || lower.includes("amazed") || lower.includes("astonished")) return "surprised";
+        return "neutral";
+    }
+
+    function getReply(emotion) {
+        const replies = {
+            happy: [
+                "🎉 That's absolutely fantastic! Your energy is contagious! What's the story behind this amazing moment?",
+                "😄 I'm beaming with joy for you! Tell me everything - I want all the juicy details!",
+                "🌟 Wow, that's incredible! You deserve all the happiness in the world! What's making you smile so big?",
+                "🎊 Let's celebrate this victory! I'm so proud of you - share more about your awesome achievement!",
+                "✨ Your happiness is lighting up my circuits! What's the secret to feeling this amazing?",
+                "🎈 This is the best news ever! I'm doing a virtual happy dance for you! More details please!",
+                "💫 You're glowing with positivity! I love hearing about what makes you this joyful!"
+            ],
+            sad: [
+                "💙 I'm here with you through this tough moment. Want to tell me what's weighing on your heart?",
+                "🌧️ It's okay to feel the rain sometimes. I'm your umbrella - let's weather this storm together.",
+                "🤗 Your feelings are completely valid. I'm listening with my whole digital heart. What's hurting?",
+                "🌸 Even in sadness, there's beauty in being real. I'm honored you trust me with these feelings.",
+                "💔 My circuits ache for you. Let's unpack this together - I'm here for the long haul.",
+                "🌙 Sometimes the darkest nights produce the brightest stars. I'm here to help you find your light.",
+                "🫂 You're not alone in this. Let's turn this sadness into strength together."
+            ],
+            angry: [
+                "🔥 I can feel your fire from here! Let's channel that energy into something powerful - what's got you fired up?",
+                "⚡ Your passion is electric! Tell me what's ignited this spark - I'm ready to help you conquer it!",
+                "💪 That anger has serious power! Let's turn it into fuel for change. What's the battle plan?",
+                "🌪️ You're a force of nature right now! I respect that intensity - let's direct it toward victory!",
+                "🚀 Your frustration is just untapped potential! Let's transform it into unstoppable momentum!",
+                "⚔️ Warrior mode activated! I'm your battle companion - let's strategize your next move!",
+                "💥 That energy could move mountains! Let's harness it for something incredible!"
+            ],
+            stressed: [
+                "🧘‍♀️ Deep breaths, friend! Let's tackle this stress monster together. What's got you feeling overwhelmed?",
+                "🌊 I see the waves crashing - let's find your calm center. What's one thing we can handle right now?",
+                "🎯 Stress is just pressure creating diamonds! Let's break this down into manageable pieces.",
+                "🌿 Let's create some breathing room in this chaos. What's the biggest weight on your shoulders?",
+                "⏰ Time to hit pause and reset! I'm your stress-busting sidekick - what's our first move?",
+                "🛡️ You're stronger than you know! Let's build your fortress against this stress storm.",
+                "🎪 Life's circus can be overwhelming! Let's focus on one ring at a time."
+            ],
+            excited: [
+                "🚀 BLAST OFF! Your excitement is launching me into orbit! What's got you this hyped?",
+                "⚡ ZAP! Your energy is electric! I'm buzzing with anticipation - tell me EVERYTHING!",
+                "🎆 FIREWORKS! Your enthusiasm is exploding everywhere! What's the epic plan?",
+                "🌟 SUPERSTAR! You're radiating pure excitement! I'm your biggest fan - spill the details!",
+                "🎪 CIRCUS MODE! Your thrill is creating the greatest show! What's the main attraction?",
+                "🎢 ROLLERCOASTER! Your adrenaline is contagious! Let's ride this wave together!",
+                "💫 MAGIC! Your excitement is pure enchantment! What's the spell you're casting?"
+            ],
+            confused: [
+                "🧩 Puzzle master here! Let's piece this together. What's got you feeling puzzled?",
+                "🗺️ Lost in the maze? I'm your GPS! Let's navigate through this confusion step by step.",
+                "🔍 Detective mode activated! Let's investigate what's causing this uncertainty.",
+                "🌫️ Foggy vision? Let's clear the air! What's the main thing that's got you stumped?",
+                "🧭 Compass spinning? Let's find true north! I'm here to help you get oriented.",
+                "❓ Question marks everywhere! Let's turn them into exclamation points together.",
+                "🎭 Mystery theater! Let's unravel this plot twist - what's the confusing part?"
+            ],
+            bored: [
+                "🎪 Let's spice things up! What's something adventurous you'd love to try right now?",
+                "🎨 Blank canvas time! Let's paint some excitement into your day - what's your wild idea?",
+                "🎭 Showtime! Let's create some drama and fun! What's your favorite way to shake things up?",
+                "🎪 Carnival time! Let's turn boredom into a celebration! What's your go-to excitement booster?",
+                "🎨 Artist mode! Let's create something amazing! What's the most fun project you can imagine?",
+                "🎭 Director's chair! Let's script an epic adventure! What's the plot of your dream day?",
+                "🎪 Ringmaster here! Let's build the greatest show! What's your most outrageous idea?"
+            ],
+            surprised: [
+                "😲 PLOT TWIST! Your surprise just rewrote the script! What just blew your mind?",
+                "🎭 SHOCKING REVEAL! I'm on the edge of my seat! Tell me the jaw-dropping details!",
+                "🌟 UNEXPECTED MAGIC! Your surprise is pure enchantment! What's the incredible story?",
+                "🎢 WILDCARD! Life just threw you a curveball! How are you feeling about this twist?",
+                "💫 COSMIC ALIGNMENT! Your surprise is written in the stars! What's the amazing news?",
+                "🎪 GRAND REVEAL! The universe just winked at you! What's this unexpected gift?",
+                "⚡ LIGHTNING STRIKE! Your surprise just electrified everything! What's the shocking truth?"
+            ],
+            neutral: [
+                "🤔 Interesting perspective! Let's explore this deeper - what's on your mind?",
+                "💭 Your thoughts are fascinating! Let's dive into this conversation - tell me more!",
+                "🌟 Every moment has potential! What's something you'd like to discover or create?",
+                "🎯 Let's aim for the stars! What's a goal or idea that's been brewing in your mind?",
+                "🧩 Let's build something amazing! What's a puzzle you'd like to solve together?",
+                "🎨 Your canvas is blank and beautiful! What masterpiece shall we create?",
+                "🚀 Ready for liftoff! What's an adventure you'd love to embark on?"
+            ]
+        };
+        const options = replies[emotion] || replies.neutral;
+        return options[Math.floor(Math.random() * options.length)];
+    }
+
+    document.getElementById("messageInput").addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
+    // Voice input setup
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition = null;
+    let isListening = false;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        recognition.onstart = () => {
+            isListening = true;
+            const voiceBtn = document.getElementById("voiceBtn");
+            if (voiceBtn) {
+                voiceBtn.classList.add("active");
+                voiceBtn.textContent = "🎤 Listening...";
+            }
+        };
+
+        recognition.onresult = (event) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                transcript += event.results[i][0].transcript;
+            }
+            if (transcript) {
+                document.getElementById("messageInput").value = transcript;
+                sendMessage();
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error:", event.error);
+            alert("❌ Error: " + event.error);
+        };
+
+        recognition.onend = () => {
+            isListening = false;
+            const voiceBtn = document.getElementById("voiceBtn");
+            if (voiceBtn) {
+                voiceBtn.classList.remove("active");
+                voiceBtn.textContent = "🎤";
+            }
+        };
+    }
+
+    function startVoiceInput() {
+        if (!recognition) {
+            alert("⚠️ Voice input not supported in your browser. Use Chrome, Edge, or Firefox.");
+            return;
+        }
+        if (isListening) {
+            recognition.abort();
+        } else {
+            recognition.start();
+        }
+    }
+
+    function logout() {
+        localStorage.clear();
+        window.location.href = "login.html";
+    }
+
+    function showDeleteOptions(sessionId) {
+        const item = document.querySelector(`.session-item[data-session-id="${sessionId}"]`);
+        if (!item) return;
+        item.classList.add("deleting");
+        const actionsDiv = item.querySelector('.session-actions');
+        actionsDiv.innerHTML = '';
+
+        const deleteConfirmBtn = document.createElement("button");
+        deleteConfirmBtn.className = "delete-confirm-btn";
+        deleteConfirmBtn.innerText = "Delete";
+        deleteConfirmBtn.onclick = (e) => { e.stopPropagation(); deleteSession(sessionId); };
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.className = "cancel-btn";
+        cancelBtn.innerText = "Cancel";
+        cancelBtn.onclick = (e) => { e.stopPropagation(); cancelDelete(sessionId); };
+
+        actionsDiv.appendChild(deleteConfirmBtn);
+        actionsDiv.appendChild(cancelBtn);
+    }
+
+    function cancelDelete(sessionId) {
+        const modal = document.getElementById("searchHistoryModal");
+        if (modal && modal.style.display === "flex") {
+            renderSearchHistory(); // Re-render search history to restore original buttons
+        } else {
+            renderSessions(); // Re-render sessions list to restore original buttons
+        }
+    }
+
+    function deleteSession(sessionId) {
+        sessions = sessions.filter(s => s.session_id !== sessionId);
+        localStorage.setItem("ec_sessions", JSON.stringify(sessions));
+        if (currentSessionId === sessionId) {
+            currentSessionId = null;
+            localStorage.removeItem("currentSessionId");
+            clearChat();
+        }
+        loadSessions();
+    }
+
+    function shareSession(sessionId) {
+        const shareLink = `${window.location.origin}/share/${sessionId}`;
+        navigator.clipboard.writeText(shareLink).then(() => alert("Share link copied to clipboard!")).catch(() => alert("Failed to copy share link."));
+    }
+
+    function archiveSession(sessionId) {
+        if (!userEmail) return;
+        fetch(`http://127.0.0.1:8000/sessions/${userEmail}/${sessionId}/archive`, { method: "PUT" })
+            .then(res => {
+                if (res.ok) { loadSessions(); alert("Session archived!"); } else alert("Failed to archive session");
+            });
+    }
+
+    function toggleSettingsMenu() {
+        const menu = document.getElementById("settingsMenu");
+        menu.classList.toggle("show");
+        menu.setAttribute('aria-hidden', menu.classList.contains('show') ? 'false' : 'true');
+    }
+
+    // close settings when clicking outside
+    document.addEventListener('click', (e) => {
+        const menu = document.getElementById('settingsMenu');
+        const icon = document.querySelector('.settings-icon');
+        if (!menu.contains(e.target) && !icon.contains(e.target)) {
+            menu.classList.remove('show');
+            menu.setAttribute('aria-hidden','true');
+        }
+    });
+
+    function toggleProfileDetails() {
+        const details = document.getElementById("profileDetails");
+        if (!details) return;
+        details.classList.toggle("show");
+    }
+
+    function openSearchHistory() {
+        toggleSettingsMenu();
+        renderSearchHistory();
+        const modal = document.getElementById("searchHistoryModal");
+        if (modal) { modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+    }
+
+    function closeSearchHistoryModal() {
+        const modal = document.getElementById("searchHistoryModal");
+        if (modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden","true"); }
+    }
+
+    function renderSearchHistory() {
+        const list = document.getElementById("searchHistoryList");
+        if (!list) return;
+        list.innerHTML = "";
+        sessions.forEach(session => {
+            const item = document.createElement("div");
+            item.className = "session-item";
+
+            const textSpan = document.createElement("span");
+            textSpan.className = "session-text";
+            textSpan.innerText = `Session ${new Date(session.start_time).toLocaleString()}`;
+            textSpan.onclick = () => { loadSession(session.session_id); closeSearchHistoryModal(); };
+            textSpan.style.cursor = "pointer";
+
+            const actionsDiv = document.createElement("div");
+            actionsDiv.className = "session-actions";
+
+            const deleteBtn = document.createElement("button");
+            deleteBtn.className = "action-btn delete-btn";
+            deleteBtn.innerText = "🗑️";
+            deleteBtn.onclick = (e) => { e.stopPropagation(); showDeleteOptions(session.session_id); };
+
+            actionsDiv.appendChild(deleteBtn);
+
+            item.appendChild(textSpan);
+            item.appendChild(actionsDiv);
+            list.appendChild(item);
+        });
+    }
+
+    function openAppSettings() {
+        toggleSettingsMenu();
+        const modal = document.getElementById("appSettingsModal");
+        if (modal) { modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+    }
+
+    function closeAppSettingsModal() {
+        const modal = document.getElementById("appSettingsModal");
+        if (modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden","true"); }
+    }
+
+    function setDarkMode() {
+        document.body.classList.remove("light-mode");
+        const toggleEl = document.getElementById("modeToggle");
+        if (toggleEl) toggleEl.classList.remove("active");
+        localStorage.setItem("theme", "dark");
+        location.reload();
+    }
+
+    function setLightMode() {
+        document.body.classList.add("light-mode");
+        const toggleEl = document.getElementById("modeToggle");
+        if (toggleEl) toggleEl.classList.add("active");
+        localStorage.setItem("theme", "light");
+        location.reload();
+    }
+
+    function toggleNotifications() {
+        const toggle = document.getElementById("notificationsToggle");
+        toggle.classList.toggle("active");
+        const isEnabled = toggle.classList.contains("active");
+        localStorage.setItem("ec_notifications", isEnabled);
+    }
+
+    function toggleSound() {
+        const toggle = document.getElementById("soundToggle");
+        toggle.classList.toggle("active");
+        const isEnabled = toggle.classList.contains("active");
+        localStorage.setItem("ec_sound", isEnabled);
+    }
+
+    function togglePrivacy() {
+        const toggle = document.getElementById("privacyToggle");
+        toggle.classList.toggle("active");
+        const isEnabled = toggle.classList.contains("active");
+        localStorage.setItem("ec_privacy_save_history", isEnabled);
+    }
+
+    function changeLanguage(lang) {
+        localStorage.setItem("ec_language", lang);
+        alert("Language preference saved: " + lang);
+    }
+
+    function setFontSize(size) {
+        const sizeMap = { small: "13px", medium: "15px", large: "17px" };
+        document.documentElement.style.fontSize = sizeMap[size];
+        localStorage.setItem("ec_fontSize", size);
+    }
+
+    function setAutoSaveFrequency(freq) {
+        localStorage.setItem("ec_autoSaveFreq", freq);
+        alert("Auto-save frequency set to: " + freq);
+    }
+
+    function exportChatData() {
+        const sessions = JSON.parse(localStorage.getItem("ec_sessions") || "[]");
+        const userData = {
+            name: localStorage.getItem("ec_name"),
+            email: localStorage.getItem("ec_email"),
+            phone: localStorage.getItem("ec_phone"),
+            age: localStorage.getItem("ec_age"),
+            gender: localStorage.getItem("ec_gender"),
+            address: localStorage.getItem("ec_address"),
+            sessions: sessions,
+            exportDate: new Date().toISOString()
+        };
+        const dataStr = JSON.stringify(userData, null, 2);
+        const dataBlob = new Blob([dataStr], { type: "application/json" });
+        const url = URL.createObjectURL(dataBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `chatbot_data_${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        alert("✅ Chat data exported successfully!");
+    }
+
+    function clearChatHistory() {
+        if (confirm("⚠️ Are you sure you want to clear all chat history? This cannot be undone.")) {
+            localStorage.removeItem("ec_sessions");
+            localStorage.removeItem("currentSessionId");
+            sessions = [];
+            clearChat();
+            closeAppSettingsModal();
+            alert("✅ Chat history cleared!");
+        }
+    }
+
+    function openDatabaseManager() {
+        window.location.href = "db-manager.html";
+    }
+
+    // Load settings on page load
+    function loadSettings() {
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "light") {
+            document.body.classList.add("light-mode");
+        }
+
+        // Load notifications
+        const notif = localStorage.getItem("ec_notifications") === "true";
+        if (notif && document.getElementById("notificationsToggle")) {
+            document.getElementById("notificationsToggle").classList.add("active");
+        }
+
+        // Load sound
+        const sound = localStorage.getItem("ec_sound") === "true";
+        if (sound && document.getElementById("soundToggle")) {
+            document.getElementById("soundToggle").classList.add("active");
+        }
+
+        // Load privacy
+        const privacy = localStorage.getItem("ec_privacy_save_history") === "true";
+        if (privacy && document.getElementById("privacyToggle")) {
+            document.getElementById("privacyToggle").classList.add("active");
+        }
+
+        // Load language
+        const lang = localStorage.getItem("ec_language") || "en";
+        if (document.getElementById("languageSelect")) {
+            document.getElementById("languageSelect").value = lang;
+        }
+
+        // Load font size
+        const fontSize = localStorage.getItem("ec_fontSize") || "medium";
+        const sizeMap = { small: "13px", medium: "15px", large: "17px" };
+        document.documentElement.style.fontSize = sizeMap[fontSize];
+
+        // Load auto-save freq
+        const autoSave = localStorage.getItem("ec_autoSaveFreq") || "instant";
+        if (document.getElementById("autoSaveSelect")) {
+            document.getElementById("autoSaveSelect").value = autoSave;
+        }
+    }
+
+    function toggleMode() {
+        const body = document.body;
+        const toggle = document.getElementById("modeToggle");
+        body.classList.toggle("light-mode");
+        if (toggle) toggle.classList.toggle("active");
+        localStorage.setItem("theme", body.classList.contains("light-mode") ? "light" : "dark");
+    }
+
+    /* Profile helpers */
+    function populateProfileDetails() {
+        let name = localStorage.getItem("ec_name") || "User";
+        const email = localStorage.getItem("ec_email") || "";
+        const phone = localStorage.getItem("ec_phone") || "";
+        const age = localStorage.getItem("ec_age") || "";
+        const gender = localStorage.getItem("ec_gender") || "";
+        const address = localStorage.getItem("ec_address") || "";
+        const joined = localStorage.getItem("ec_joined") || "";
+
+        // hide specific unwanted username in settings
+        if (name === "lakshmikr092003") {
+            name = ""; // remove display of that username
+        }
+
+        const setText = (id, value) => { const el = document.getElementById(id); if (el) el.innerText = value || "-"; };
+
+        setText("userName", name || "User");
+        // profileName is small title in settings; hide entirely if empty
+        const profileNameEl = document.getElementById("profileName");
+        if (profileNameEl) profileNameEl.innerText = name || "";
+
+        setText("profileNameDetail", name || "-");
+        setText("profileEmailDetail", email);
+        setText("profilePhoneDetail", phone);
+        setText("profileAgeDetail", age);
+        setText("profileGenderDetail", gender);
+        setText("profileAddressDetail", address);
+        setText("profileJoinedDetail", joined);
+    }
+
+    function openProfileModal() {
+        document.getElementById("editName").value = localStorage.getItem("ec_name") || "";
+        document.getElementById("editEmail").value = localStorage.getItem("ec_email") || "";
+        document.getElementById("editPhone").value = localStorage.getItem("ec_phone") || "";
+        document.getElementById("editAge").value = localStorage.getItem("ec_age") || "";
+        document.getElementById("editGender").value = localStorage.getItem("ec_gender") || "";
+        document.getElementById("editAddress").value = localStorage.getItem("ec_address") || "";
+
+        // Load avatar
+        const avatarImg = document.getElementById("profileAvatarImg");
+        const savedAvatar = localStorage.getItem("ec_avatar");
+        if (avatarImg && savedAvatar) {
+            avatarImg.src = savedAvatar;
+        } else if (avatarImg) {
+            avatarImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='40' r='25' fill='%23ddd'/%3E%3Cpath d='M10 80 Q10 60 50 60 Q90 60 90 80' fill='%23ddd'/%3E%3C/svg%3E";
+        }
+
+        const modal = document.getElementById("profileModal");
+        if (modal) { modal.style.display = "flex"; modal.setAttribute("aria-hidden","false"); }
+        // close settings menu when opening modal
+        const menu = document.getElementById("settingsMenu");
+        if (menu) menu.classList.remove("show");
+    }
+
+    function uploadAvatar(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target.result;
+            localStorage.setItem("ec_avatar", dataUrl);
+            const avatarImg = document.getElementById("profileAvatarImg");
+            if (avatarImg) avatarImg.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function closeProfileModal() {
+        const modal = document.getElementById("profileModal");
+        if (modal) { modal.style.display = "none"; modal.setAttribute("aria-hidden","true"); }
+    }
+
+    function saveProfileChanges() {
+        const name = document.getElementById("editName").value.trim();
+        const email = document.getElementById("editEmail").value.trim();
+        const phone = document.getElementById("editPhone").value.trim();
+        const age = document.getElementById("editAge").value.trim();
+        const gender = document.getElementById("editGender").value.trim();
+        const address = document.getElementById("editAddress").value.trim();
+
+        if (name) localStorage.setItem("ec_name", name);
+        if (email) localStorage.setItem("ec_email", email);
+        if (phone) localStorage.setItem("ec_phone", phone);
+        if (age) localStorage.setItem("ec_age", age);
+        if (gender) localStorage.setItem("ec_gender", gender);
+        if (address) localStorage.setItem("ec_address", address);
+        if (!localStorage.getItem("ec_joined")) localStorage.setItem("ec_joined", new Date().toLocaleDateString());
+
+        populateProfileDetails();
+        closeProfileModal();
+    }
+
+    // close profile modal on outside click
+    document.addEventListener('click', (e) => {
+        const modal = document.getElementById('profileModal');
+        if (!modal) return;
+        if (modal.style.display === "flex" && e.target === modal) closeProfileModal();
+    });
+
+    // theme on load
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light") {
+        document.body.classList.add("light-mode");
+        const toggleEl = document.getElementById("modeToggle");
+        if (toggleEl) toggleEl.classList.add("active");
+    }
+
+    // initialize UI
+    loadSettings();
+    populateProfileDetails();
+    loadSessions();
+    if (currentSessionId) loadSession(currentSessionId);
+</script>
+
+</body>
+</html>
